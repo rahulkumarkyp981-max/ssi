@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class 11 IIT-JEE Arena & Progress Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: #131c2e;
+      --accent-cyan: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --gold: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; font-family: 'Outfit', sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg-dark); color: var(--text-main); padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+
+    /* Top Stats Bar */
+    .game-status-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(19, 28, 46, 0.8); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1); padding: 15px 25px;
+      border-radius: 16px; margin-bottom: 25px;
+    }
+    .stat-pill { font-weight: 600; font-size: 16px; }
+    .stat-pill span { color: var(--gold); }
+
+    /* Analytics Dashboard Card */
+    .dashboard-card {
+      background: var(--card-bg); border-radius: 20px; padding: 25px;
+      border: 1px solid rgba(255,255,255,0.08); margin-bottom: 25px;
+    }
+    .progress-bar-container { background: rgba(255,255,255,0.05); height: 12px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+    .progress-fill { background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)); height: 100%; width: 0%; transition: width 0.5s ease; }
+    .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px; text-align: center; }
+    .analytic-box { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+    .analytic-num { font-size: 22px; font-weight: 800; color: var(--accent-cyan); margin-top: 5px; }
+
+    /* Filter Tabs */
+    .section-tabs { display: flex; gap: 12px; margin-bottom: 20px; overflow-x: auto; }
+    .tab-btn {
+      background: var(--card-bg); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.05);
+      padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: 0.3s;
+    }
+    .tab-btn.active { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: white; }
+
+    /* Quiz Card */
+    .quiz-card { background: var(--card-bg); border-radius: 20px; padding: 30px; border: 1px solid rgba(255,255,255,0.08); }
+    .meta-tags { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tag { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; }
+    .tag-pyq { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); }
+    .tag-level { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border: 1px solid var(--accent-purple); }
+
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+    @media(max-width: 600px) { .options-grid { grid-template-columns: 1fr; } .analytics-grid { grid-template-columns: 1fr 1fr; } }
+    .opt-card {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 16px;
+      border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s;
+    }
+    .opt-card:hover { background: rgba(255,255,255,0.08); }
+    .opt-card.correct { background: rgba(16, 185, 129, 0.2) !important; border-color: var(--success) !important; }
+    .opt-card.wrong { background: rgba(239, 68, 68, 0.2) !important; border-color: var(--danger) !important; }
+
+    .solution-panel { margin-top: 20px; background: rgba(9, 13, 22, 0.9); border-left: 4px solid var(--accent-cyan); padding: 20px; border-radius: 12px; display: none; }
+    .next-btn { margin-top: 20px; width: 100%; padding: 15px; border-radius: 12px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: white; font-weight: bold; cursor: pointer; border: none; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Gamified Header Bar -->
+  <div class="game-status-bar">
+    <div class="stat-pill">⚡ XP: <span id="xp-val">0</span></div>
+    <div class="stat-pill">🔥 Streak: <span id="streak-val">0</span></div>
+    <div class="stat-pill">🏆 Level: <span id="rank-val">Beginner</span></div>
+  </div>
+
+  <!-- Student Progress Dashboard (Backend Data Display) -->
+  <div class="dashboard-card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3>📈 Class 11 Master Progress Dashboard</h3>
+      <button style="background:transparent; color:var(--text-muted); border:1px solid #334155; padding:5px 10px; border-radius:6px; cursor:pointer;" onclick="resetBackendData()">Reset Progress</button>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="analytics-grid">
+      <div class="analytic-box"><div>Attempted</div><div class="analytic-num" id="stat-att">0</div></div>
+      <div class="analytic-box"><div>Correct</div><div class="analytic-num" id="stat-corr" style="color:var(--success)">0</div></div>
+      <div class="analytic-box"><div>Accuracy</div><div class="analytic-num" id="stat-acc">0%</div></div>
+      <div class="analytic-box"><div>Overall Mastery</div><div class="analytic-num" id="stat-mastery">0%</div></div>
+    </div>
+  </div>
+
+  <!-- Navigation Sections -->
+  <div class="section-tabs">
+    <button class="tab-btn active" onclick="filterSection('all', this)">🌐 All Class 11 Arena</button>
+    <button class="tab-btn" onclick="filterSection('School', this)">🏫 Class 11 Basics (School)</button>
+    <button class="tab-btn" onclick="filterSection('JEE Main', this)">📘 Class 11 JEE Main PYQs</button>
+    <button class="tab-btn" onclick="filterSection('JEE Advanced', this)">🔥 Class 11 JEE Advanced PYQs</button>
+  </div>
+
+  <!-- Main Game Panel -->
+  <div class="quiz-card" id="quiz-box">
+    <div class="meta-tags">
+      <span class="tag tag-level" id="q-level">Level</span>
+      <span class="tag tag-pyq" id="q-meta">PYQ Info</span>
+    </div>
+    <h3 id="q-title" style="line-height:1.5;">Loading Question...</h3>
+    <div class="options-grid" id="options-box"></div>
+    <div class="solution-panel" id="sol-panel">
+      <h4 style="color:var(--accent-cyan); margin-bottom:8px;">💡 Detailed Solution Walkthrough</h4>
+      <p id="sol-text" style="color:var(--text-muted); line-height:1.6;"></p>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question ➔</button>
+  </div>
+</div>
+
+<script>
+// --- CLASS 11 JEE DATABASE (Basics, Main PYQs & Advanced PYQs) ---
+const class11Database = [
+  // Physics - Class 11 Basics & PYQs
+  {
+    id: "c11_phy_1", level: "School", meta: "Class 11 Physics | Kinematics Basics",
+    q: "A body starts from rest and accelerates uniformly at 2 m/s² for 5 seconds. What is the displacement covered?",
+    opts: ["10 m", "25 m", "50 m", "20 m"], ans: 1,
+    sol: "Formula: s = ut + (1/2)at²\nu = 0, a = 2 m/s², t = 5s\ns = 0 + (1/2) × 2 × (5)² = 25 meters."
+  },
+  {
+    id: "c11_phy_2", level: "JEE Main", meta: "Class 11 Physics PYQ 2024 | 27 Jan Shift-1",
+    q: "The dimension of Universal Gravitational Constant G is given by:",
+    opts: ["[M⁻¹ L³ T⁻²]", "[M¹ L² T⁻²]", "[M⁻² L³ T⁻¹]", "[M⁻¹ L² T⁻³]"], ans: 0,
+    sol: "Formula: F = G (m₁m₂)/r² ⇒ G = (F × r²) / (m₁m₂)\nDimensions = ([M L T⁻²] × [L²]) / [M²] = [M⁻¹ L³ T⁻²]."
+  },
+  {
+    id: "c11_phy_3", level: "JEE Advanced", meta: "Class 11 Physics PYQ 2023 | Paper 1",
+    q: "A block of mass m is placed on a smooth inclined plane of angle θ. The acceleration of the block down the incline is:",
+    opts: ["g cosθ", "g sinθ", "g tanθ", "g / sinθ"], ans: 1,
+    sol: "Component of gravity along the inclined plane is mg sinθ.\nForce = ma ⇒ ma = mg sinθ ⇒ a = g sinθ."
+  },
+
+  // Chemistry - Class 11 Basics & PYQs
+  {
+    id: "c11_chem_1", level: "School", meta: "Class 11 Chem | Chemical Bonding Basics",
+    q: "What is the shape of a Methane (CH₄) molecule according to VSEPR theory?",
+    opts: ["Trigonal Planar", "Tetrahedral", "Linear", "Pyramidal"], ans: 1,
+    sol: "CH₄ has 4 bond pairs and 0 lone pairs around central Carbon (sp³ hybridized), resulting in a regular Tetrahedral geometry."
+  },
+  {
+    id: "c11_chem_2", level: "JEE Main", meta: "Class 11 Chem PYQ 2023 | 25 Jan Shift-2",
+    q: "The number of radial nodes for a 3p orbital is:",
+    opts: ["1", "2", "0", "3"], ans: 0,
+    sol: "Formula for Radial Nodes = n - l - 1\nFor 3p orbital: n = 3, l = 1\nRadial Nodes = 3 - 1 - 1 = 1."
+  },
+
+  // Math - Class 11 Basics & PYQs
+  {
+    id: "c11_math_1", level: "School", meta: "Class 11 Math | Quadratic Equations",
+    q: "If α and β are roots of x² - 7x + 12 = 0, find the value of (α + β).",
+    opts: ["-7", "12", "7", "-12"], ans: 2,
+    sol: "For ax² + bx + c = 0, sum of roots (α + β) = -b/a.\nHere a = 1, b = -7 ⇒ Sum = -(-7)/1 = 7."
+  },
+  {
+    id: "c11_math_2", level: "JEE Main", meta: "Class 11 Math PYQ 2024 | 30 Jan Shift-1",
+    q: "The sum of the infinite G.P. 1 + 1/3 + 1/9 + 1/27 + ... is equal to:",
+    opts: ["3/2", "4/3", "2", "3"], ans: 0,
+    sol: "Infinite G.P. Sum Formula S = a / (1 - r)\nHere a = 1, common ratio r = 1/3\nS = 1 / (1 - 1/3) = 1 / (2/3) = 3/2."
+  },
+  {
+    id: "c11_math_3", level: "JEE Advanced", meta: "Class 11 Math PYQ 2022 | Paper 2",
+    q: "Number of real solutions of the equation e^x = x² for x < 0 is:",
+    opts: ["0", "1", "2", "3"], ans: 1,
+    sol: "For x < 0, e^x is strictly increasing from 0 to 1, while x² decreases from ∞ to 0. They intersect at exactly 1 point."
+  }
+];
+
+// --- LOCALSTORAGE BACKEND & ENGINE ---
+let activeDataset = [...class11Database];
+let currentIndex = 0;
+let isAnswered = false;
+
+// Student Progress Backend State
+let userBackend = JSON.parse(localStorage.getItem('jee11_backend_data')) || {
+  xp: 0,
+  streak: 0,
+  attempted: 0,
+  correct: 0,
+  solvedIDs: {}
+};
+
+function saveBackendData() {
+  localStorage.setItem('jee11_backend_data', JSON.stringify(userBackend));
+  updateDashboardUI();
+}
+
+function resetBackendData() {
+  if (confirm("Kya aap sach me apna sara progress reset karna chahte hain?")) {
+    localStorage.removeItem('jee11_backend_data');
+    userBackend = { xp: 0, streak: 0, attempted: 0, correct: 0, solvedIDs: {} };
+    saveBackendData();
+    currentIndex = 0;
+    loadQuestion();
+  }
+}
+
+function updateDashboardUI() {
+  document.getElementById('xp-val').innerText = userBackend.xp;
+  document.getElementById('streak-val').innerText = userBackend.streak;
+  
+  // Calculate Ranks
+  let rank = "Beginner";
+  if (userBackend.xp >= 300) rank = "JEE Main Ready 🚀";
+  if (userBackend.xp >= 600) rank = "JEE Advanced Master 👑";
+  document.getElementById('rank-val').innerText = rank;
+
+  // Calculate Metrics
+  const att = userBackend.attempted;
+  const corr = userBackend.correct;
+  const acc = att > 0 ? Math.round((corr / att) * 100) : 0;
+  const totalQuestions = class11Database.length;
+  const mastery = Math.round((corr / totalQuestions) * 100);
+
+  document.getElementById('stat-att').innerText = att;
+  document.getElementById('stat-corr').innerText = corr;
+  document.getElementById('stat-acc').innerText = acc + "%";
+  document.getElementById('stat-mastery').innerText = mastery + "%";
+  document.getElementById('progress-fill').style.width = mastery + "%";
+}
+
+// --- QUIZ ENGINE ---
+function loadQuestion() {
+  isAnswered = false;
+  document.getElementById('sol-panel').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+
+  if (currentIndex >= activeDataset.length) {
+    document.getElementById('quiz-box').innerHTML = `<h2 style="text-align:center; padding:30px; color:var(--accent-cyan);">🎉 Aapne Class 11 ke is section ke sabhi questions attempt kar liye hain!</h2>`;
+    return;
+  }
+
+  const currentQ = activeDataset[currentIndex];
+  document.getElementById('q-level').innerText = currentQ.level;
+  document.getElementById('q-meta').innerText = currentQ.meta;
+  document.getElementById('q-title').innerText = `Q${currentIndex + 1}. ${currentQ.q}`;
+
+  const optsContainer = document.getElementById('options-box');
+  optsContainer.innerHTML = '';
+
+  currentQ.opts.forEach((opt, idx) => {
+    optsContainer.innerHTML += `
+      <div class="opt-card" id="opt-${idx}" onclick="evaluateChoice(${idx})">
+        <div style="background:rgba(255,255,255,0.1); width:28px; height:28px; border-radius:6px; text-align:center; line-height:28px; font-weight:bold;">${String.fromCharCode(65 + idx)}</div>
+        <div>${opt}</div>
+      </div>
+    `;
+  });
+}
+
+function evaluateChoice(selectedIdx) {
+  if (isAnswered) return;
+  isAnswered = true;
+
+  const currentQ = activeDataset[currentIndex];
+  const selectedElem = document.getElementById(`opt-${selectedIdx}`);
+  const correctElem = document.getElementById(`opt-${currentQ.ans}`);
+
+  userBackend.attempted++;
+
+  if (selectedIdx === currentQ.ans) {
+    selectedElem.classList.add('correct');
+    userBackend.xp += 50;
+    userBackend.streak++;
+    userBackend.correct++;
+    userBackend.solvedIDs[currentQ.id] = true;
+  } else {
+    selectedElem.classList.add('wrong');
+    correctElem.classList.add('correct');
+    userBackend.streak = 0;
+  }
+
+  saveBackendData();
+  document.getElementById('sol-text').innerHTML = currentQ.sol.replace(/\n/g, '<br>');
+  document.getElementById('sol-panel').style.display = 'block';
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQuestion() {
+  currentIndex++;
+  loadQuestion();
+}
+
+function filterSection(category, buttonElem) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  buttonElem.classList.add('active');
+
+  activeDataset = category === 'all' ? class11Database : class11Database.filter(q => q.level === category);
+  currentIndex = 0;
+  loadQuestion();
+}
+
+// Initializing Dashboard & Engine
+updateDashboardUI();
+loadQuestion();
+</script>
+</body>
+</html>
